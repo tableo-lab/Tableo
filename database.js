@@ -141,6 +141,7 @@ async function createMenuItem(itemData) {
     description: itemData.description || '',
     price: parseFloat(itemData.price),
     is_veg: itemData.is_veg !== undefined ? itemData.is_veg : 1,
+    image_url: itemData.image_url || null,
     available: 1,
     position: maxPos + 1
   }]).select('*, categories(name)').single();
@@ -323,9 +324,8 @@ async function generateBill(tableId, discountPercent, paymentMethod) {
 
   const disc = parseFloat(discountPercent) || 0;
   const discountAmount = Math.round((subtotal * disc / 100) * 100) / 100;
-  const afterDiscount = subtotal - discountAmount;
-  const taxAmount = Math.round((afterDiscount * taxPercent / 100) * 100) / 100;
-  const grandTotal = Math.round((afterDiscount + taxAmount) * 100) / 100;
+  const grandTotal = subtotal - discountAmount; 
+  const taxAmount = Math.round((grandTotal * taxPercent / (100 + taxPercent)) * 100) / 100;
 
   const { data: bill, error } = await supabase.from('bills').insert([{
     bill_number: billNumber,

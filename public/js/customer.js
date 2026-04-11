@@ -158,6 +158,7 @@ function renderMenu(items) {
 
     return `
       <div class="menu-item-card fade-in-up" id="menu-card-${item.id}">
+        ${item.image_url ? `<img src="${item.image_url}" onerror="this.style.display='none'" style="width:100%; height:160px; object-fit:cover; border-radius:8px; margin-bottom:12px;">` : ''}
         <div class="menu-item-header">
           <div class="veg-badge ${vegClass}"></div>
           <span class="menu-item-name">${escHtml(item.name)}</span>
@@ -332,7 +333,13 @@ async function placeOrder() {
     return;
   }
 
-  const name = customerName || document.getElementById('customerNameInput').value.trim() || 'Guest';
+  const name = customerName || document.getElementById('customerNameInput').value.trim();
+  if (!name) {
+    showToast('Please enter your name first to place the order', 'error');
+    document.getElementById('customerNameInput').focus();
+    return;
+  }
+  
   const notes = document.getElementById('orderNotes').value.trim();
 
   const orderItems = cart.map(c => ({

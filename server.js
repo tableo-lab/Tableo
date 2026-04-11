@@ -20,6 +20,24 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ===========================
+// Basic Auth Middleware
+// ===========================
+function requireAuth(req, res, next) {
+  const pwd = process.env.OWNER_PASSWORD;
+  if (!pwd) return next(); // Skip auth if password is not set
+
+  const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+  const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+
+  if (login === 'admin' && password === pwd) {
+    return next();
+  }
+
+  res.set('WWW-Authenticate', 'Basic realm="401"');
+  res.status(401).send('Authentication required.');
+}
+
+// ===========================
 // Page Routes
 // ===========================
 app.get('/', (req, res) => {
@@ -36,11 +54,11 @@ app.get('/table/:tableId', async (req, res) => {
   }
 });
 
-app.get('/kitchen', (req, res) => {
+app.get('/kitchen', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'kitchen.html'));
 });
 
-app.get('/owner', (req, res) => {
+app.get('/owner', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'owner.html'));
 });
 

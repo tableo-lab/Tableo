@@ -374,6 +374,7 @@ async function openAddItemModal() {
   document.getElementById('itemName').value = '';
   document.getElementById('itemDesc').value = '';
   document.getElementById('itemPrice').value = '';
+  document.getElementById('itemImageUrl').value = '';
   document.querySelector('input[name="itemVeg"][value="1"]').checked = true;
 
   await populateCategorySelect();
@@ -390,6 +391,7 @@ async function openEditItemModal(id) {
   document.getElementById('itemName').value = menuItem.name;
   document.getElementById('itemDesc').value = menuItem.description || '';
   document.getElementById('itemPrice').value = menuItem.price;
+  document.getElementById('itemImageUrl').value = menuItem.image_url || '';
   document.querySelector(`input[name="itemVeg"][value="${menuItem.is_veg ? '1' : '0'}"]`).checked = true;
 
   await populateCategorySelect(menuItem.category_id);
@@ -416,15 +418,16 @@ async function saveItem() {
   const price = parseFloat(document.getElementById('itemPrice').value);
   const category_id = parseInt(document.getElementById('itemCategory').value) || null;
   const is_veg = parseInt(document.querySelector('input[name="itemVeg"]:checked').value);
+  const image_url = document.getElementById('itemImageUrl').value.trim();
 
   if (!name) { showToast('Please enter item name', 'error'); return; }
   if (isNaN(price) || price < 0) { showToast('Please enter a valid price', 'error'); return; }
 
   if (id) {
-    await api(`/api/menu/${id}`, { method: 'PUT', body: { name, description, price, category_id, is_veg } });
+    await api(`/api/menu/${id}`, { method: 'PUT', body: { name, description, price, category_id, is_veg, image_url } });
     showToast('Item updated!', 'success');
   } else {
-    await api('/api/menu', { method: 'POST', body: { name, description, price, category_id, is_veg } });
+    await api('/api/menu', { method: 'POST', body: { name, description, price, category_id, is_veg, image_url } });
     showToast('Item added to menu!', 'success');
   }
 
@@ -566,16 +569,15 @@ function recalcBill() {
 
   const discountPercent = parseFloat(document.getElementById('billDiscount').value) || 0;
   const discountAmount = Math.round((subtotal * discountPercent / 100) * 100) / 100;
-  const afterDiscount = subtotal - discountAmount;
+  const grandTotal = subtotal - discountAmount;
   const taxPercent = parseFloat(settings.tax_percent) || 5;
-  const taxAmount = Math.round((afterDiscount * taxPercent / 100) * 100) / 100;
-  const grandTotal = Math.round((afterDiscount + taxAmount) * 100) / 100;
+  const taxAmount = Math.round((grandTotal * taxPercent / (100 + taxPercent)) * 100) / 100;
 
   document.getElementById('billSummary').innerHTML = `
-    <div class="bill-row"><span>Subtotal</span><span>${currency}${subtotal.toFixed(2)}</span></div>
+    <div class="bill-row"><span>Total Items Value</span><span>${currency}${subtotal.toFixed(2)}</span></div>
     ${discountPercent > 0 ? `<div class="bill-row" style="color:var(--success)"><span>Discount (${discountPercent}%)</span><span>-${currency}${discountAmount.toFixed(2)}</span></div>` : ''}
-    <div class="bill-row"><span>Tax (${taxPercent}%)</span><span>+${currency}${taxAmount.toFixed(2)}</span></div>
     <div class="bill-row total"><span>Grand Total</span><span>${currency}${grandTotal.toFixed(2)}</span></div>
+    <div class="text-xs text-grey" style="text-align:right; margin-top:4px;">(Includes ${taxPercent}% GST: ${currency}${taxAmount.toFixed(2)})</div>
   `;
 }
 
@@ -628,31 +630,32 @@ function showPrintBill(bill) {
   document.getElementById('printBillContent').innerHTML = `
     <div class="print-bill">
       <div class="bill-header">
-        <h2 style="font-size:1.2rem;margin-bottom:4px;">${escHtml(restName)}</h2>
+        <h2 style="font-size:1.4rem;margin-bottom:4px;text-transform:uppercase;">TAX INVOICE</h2>
+        <h3 style="font-size:1.1rem;margin-bottom:4px;">${escHtml(restName)}</h3>
         ${restAddr ? `<p style="font-size:0.75rem;color:var(--grey-500);margin:2px 0;">${escHtml(restAddr)}</p>` : ''}
-        ${restPhone ? `<p style="font-size:0.75rem;color:var(--grey-500);margin:2px 0;">${escHtml(restPhone)}</p>` : ''}
-        ${gst ? `<p style="font-size:0.75rem;color:var(--grey-500);margin:2px 0;">GST: ${escHtml(gst)}</p>` : ''}
+        ${restPhone ? `<p style="font-size:0.75rem;color:var(--grey-500);margin:2px 0;">Ph: ${escHtml(restPhone)}</p>` : ''}
+        ${gst ? `<p style="font-size:0.75rem;font-weight:bold;margin:4px 0;">GSTIN: ${escHtml(gst)}</p>` : ''}
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:8px;color:var(--grey-500);">
-        <span>${bill.bill_number}</span>
+        <span>Invoice No: ${bill.bill_number}</span>
         <span>${formatDateTime(bill.created_at)}</span>
       </div>
       <div style="font-size:0.85rem;margin-bottom:12px;"><strong>Table:</strong> ${escHtml(bill.table_name)}</div>
       <div class="bill-items">
-        <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--grey-500);padding-bottom:6px;border-bottom:1px dashed var(--grey-300);margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--grey-500);padding-bottom:6px;border-bottom:1px solid #333;margin-bottom:6px;">
           <span>ITEM</span><span>AMOUNT</span>
         </div>
         ${itemsHtml}
       </div>
-      <div class="bill-summary" style="padding:12px 0;">
+      <div class="bill-summary" style="padding:8px 0;">
         <div class="bill-row"><span>Subtotal</span><span>${currency}${bill.subtotal.toFixed(2)}</span></div>
-        ${bill.discount_percent > 0 ? `<div class="bill-row" style="color:var(--success);"><span>Discount (${bill.discount_percent}%)</span><span>-${currency}${bill.discount_amount.toFixed(2)}</span></div>` : ''}
-        <div class="bill-row"><span>Tax (${bill.tax_percent}%)</span><span>+${currency}${bill.tax_amount.toFixed(2)}</span></div>
-        <div class="bill-row total"><span>TOTAL</span><span>${currency}${bill.grand_total.toFixed(2)}</span></div>
+        ${bill.discount_percent > 0 ? `<div class="bill-row"><span>Discount (${bill.discount_percent}%)</span><span>-${currency}${bill.discount_amount.toFixed(2)}</span></div>` : ''}
+        <div class="bill-row total"><span>GRAND TOTAL</span><span>${currency}${bill.grand_total.toFixed(2)}</span></div>
+        <div style="text-align:right;font-size:0.75rem;margin-top:4px;">Includes GST (${bill.tax_percent}%): ${currency}${bill.tax_amount.toFixed(2)}</div>
       </div>
-      <div style="text-align:center;font-size:0.8rem;color:var(--grey-500);margin-top:12px;padding-top:12px;border-top:1px dashed var(--grey-300);">
+      <div style="text-align:center;font-size:0.8rem;color:var(--grey-500);margin-top:12px;padding-top:12px;border-top:1px dashed #333;">
         <p>Payment: ${bill.payment_method.toUpperCase()}</p>
-        <p style="margin-top:8px;">Thank you for dining with us!</p>
+        <p style="margin-top:8px;font-style:italic;">Thank you for dining with us!</p>
         <p style="font-weight:600;margin-top:4px;">Powered by TABLEO</p>
       </div>
     </div>`;
