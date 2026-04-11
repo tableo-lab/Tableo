@@ -7,6 +7,11 @@
   <meta name="description" content="Kitchen order management display">
   <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
   <link rel="stylesheet" href="/css/styles.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#FF6B00">
+  <link rel="apple-touch-icon" href="/assets/icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
     body { background: var(--grey-100); }
   </style>
@@ -70,5 +75,12 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/kitchen.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
+  </script>
 </body>
 </html>
