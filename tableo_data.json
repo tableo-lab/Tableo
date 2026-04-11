@@ -1,0 +1,99 @@
+{
+  "settings": {
+    "restaurant_name": "My Restaurant",
+    "restaurant_address": "",
+    "restaurant_phone": "",
+    "tax_percent": "5",
+    "currency_symbol": "₹",
+    "gst_number": ""
+  },
+  "tables": [
+    {
+      "id": 1,
+      "name": "Table 1",
+      "seats": 4,
+      "status": "occupied",
+      "created_at": "2026-04-10T11:45:56.836Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Mains",
+      "icon": "🍽️M",
+      "position": 1,
+      "active": 1
+    }
+  ],
+  "menu_items": [
+    {
+      "id": 1,
+      "category_id": 1,
+      "name": "Cheeseburger",
+      "description": "",
+      "price": 10,
+      "is_veg": 0,
+      "available": 1,
+      "position": 1,
+      "created_at": "2026-04-11T06:08:56.514Z"
+    }
+  ],
+  "orders": [
+    {
+      "id": 1,
+      "table_id": 1,
+      "customer_name": "Test User",
+      "order_number": "ORD-20260411-001",
+      "status": "completed",
+      "notes": "",
+      "created_at": "2026-04-11T06:09:42.098Z"
+    },
+    {
+      "id": 2,
+      "table_id": 1,
+      "customer_name": "Test UserTester",
+      "order_number": "ORD-20260411-002",
+      "status": "completed",
+      "notes": "",
+      "created_at": "2026-04-11T06:14:28.502Z"
+    }
+  ],
+  "order_items": [
+    {
+      "id": 1,
+      "order_id": 1,
+      "menu_item_id": 1,
+      "item_name": "Cheeseburger",
+      "item_price": 10,
+      "quantity": 1,
+      "notes": "",
+      "is_veg": 0,
+      "status": "served",
+      "updated_at": "2026-04-11T06:10:06.133Z",
+      "created_at": "2026-04-11T06:09:42.098Z"
+    },
+    {
+      "id": 2,
+      "order_id": 2,
+      "menu_item_id": 1,
+      "item_name": "Cheeseburger",
+      "item_price": 10,
+      "quantity": 1,
+      "notes": "",
+      "is_veg": 0,
+      "status": "served",
+      "updated_at": "2026-04-11T06:15:14.643Z",
+      "created_at": "2026-04-11T06:14:28.502Z"
+    }
+  ],
+  "bills": [],
+  "bill_orders": [],
+  "_counters": {
+    "table": 1,
+    "category": 1,
+    "menu_item": 1,
+    "order": 2,
+    "order_item": 2,
+    "bill": 0
+  }
+}

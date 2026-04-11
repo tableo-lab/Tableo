@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TABLEO — Menu & Order</title>
+  <meta name="description" content="Browse menu and place your order">
+  <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <a href="#" class="navbar-brand">
+        <img src="/assets/logo.svg" alt="TABLEO">
+      </a>
+      <div class="navbar-info">
+        <span class="nav-badge" id="tableTag">🪑 Table —</span>
+        <button class="btn btn-sm btn-outline-primary" onclick="callWaiter()" id="callWaiterBtn">🔔 Call Waiter</button>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content" style="max-width: 900px;">
+      <!-- Welcome Banner -->
+      <div class="welcome-banner fade-in-up">
+        <h1 id="restaurantName">Welcome!</h1>
+        <p>Browse our menu and place your order. Tap items to add to your cart.</p>
+        <div class="table-tag" id="tableBanner">🪑 You're at Table —</div>
+      </div>
+
+      <!-- Customer Name -->
+      <div class="card mb-16 fade-in-up" id="nameSection">
+        <div class="card-body" style="padding: 16px 22px;">
+          <div class="flex items-center gap-12">
+            <label class="form-label" style="margin:0; white-space:nowrap;">Your Name:</label>
+            <input type="text" class="form-control" id="customerNameInput" placeholder="Enter your name" style="flex:1;">
+            <button class="btn btn-primary btn-sm" onclick="setCustomerName()">Set</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs: Menu / My Orders -->
+      <div class="tabs" id="customerTabs">
+        <button class="tab active" onclick="switchTab('menu')">🍽️ Menu</button>
+        <button class="tab" onclick="switchTab('orders')">📋 My Orders</button>
+      </div>
+
+      <!-- MENU TAB -->
+      <div id="menuTab">
+        <!-- Search -->
+        <div class="search-box mb-16">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control" id="menuSearch" placeholder="Search dishes..." style="padding-left: 38px;" oninput="filterMenu()">
+        </div>
+
+        <!-- Category Chips -->
+        <div class="category-chips" id="categoryChips"></div>
+
+        <!-- Menu Grid -->
+        <div class="menu-grid" id="menuGrid"></div>
+
+        <!-- Empty state -->
+        <div class="empty-state" id="menuEmpty" style="display:none;">
+          <div class="empty-icon">🍽️</div>
+          <h3>Menu not available yet</h3>
+          <p>The restaurant is still setting up their menu. Please check back shortly.</p>
+        </div>
+      </div>
+
+      <!-- ORDERS TAB -->
+      <div id="ordersTab" style="display:none;">
+        <div id="ordersContainer"></div>
+        <div class="empty-state" id="ordersEmpty" style="display:none;">
+          <div class="empty-icon">📋</div>
+          <h3>No orders yet</h3>
+          <p>Add items from the menu and place your first order!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cart FAB -->
+    <button class="cart-fab" id="cartFab" onclick="openCart()" style="display:none;">
+      🛒
+      <span class="cart-count" id="cartCount">0</span>
+    </button>
+
+    <!-- Cart Slide Panel -->
+    <div class="modal-overlay" id="cartOverlay" onclick="closeCart()"></div>
+    <div class="slide-panel" id="cartPanel">
+      <div class="slide-panel-header">
+        <h2>🛒 Your Cart</h2>
+        <button class="close-btn" onclick="closeCart()">✕</button>
+      </div>
+      <div class="slide-panel-body" id="cartBody">
+        <div class="empty-state" id="cartEmpty">
+          <div class="empty-icon">🛒</div>
+          <h3>Cart is empty</h3>
+          <p>Add some delicious items from the menu!</p>
+        </div>
+        <div id="cartItems"></div>
+      </div>
+      <div class="slide-panel-footer" id="cartFooter" style="display:none;">
+        <div class="bill-row font-bold" style="font-size:1rem;">
+          <span>Total</span>
+          <span id="cartTotal">₹0</span>
+        </div>
+        <div class="form-group mt-8" style="margin-bottom:8px;">
+          <input type="text" class="form-control" id="orderNotes" placeholder="Any special instructions? (optional)">
+        </div>
+        <button class="btn btn-primary btn-block btn-lg mt-8" onclick="placeOrder()">
+          Place Order
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/customer.js"></script>
+</body>
+</html>

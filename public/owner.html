@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TABLEO — Owner Panel</title>
+  <meta name="description" content="Restaurant management and billing panel">
+  <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <a href="/owner" class="navbar-brand">
+        <img src="/assets/logo.svg" alt="TABLEO">
+      </a>
+      <div class="navbar-info">
+        <span class="nav-badge">👑 Owner Panel</span>
+        <div class="nav-links">
+          <a href="/kitchen" class="nav-link">Kitchen Display</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Layout -->
+    <div class="owner-layout">
+      <!-- Sidebar -->
+      <aside class="owner-sidebar">
+        <ul class="sidebar-menu">
+          <li><a href="#" class="active" onclick="showSection('dashboard')" data-section="dashboard"><span class="menu-icon">📊</span> Dashboard</a></li>
+          <li><a href="#" onclick="showSection('tables')" data-section="tables"><span class="menu-icon">🪑</span> Tables & QR</a></li>
+          <li><a href="#" onclick="showSection('menu')" data-section="menu"><span class="menu-icon">📋</span> Menu</a></li>
+          <li><a href="#" onclick="showSection('orders')" data-section="orders"><span class="menu-icon">📦</span> Orders</a></li>
+          <li><a href="#" onclick="showSection('billing')" data-section="billing"><span class="menu-icon">💰</span> Billing</a></li>
+          <li><a href="#" onclick="showSection('history')" data-section="history"><span class="menu-icon">📜</span> Bill History</a></li>
+          <li><a href="#" onclick="showSection('settings')" data-section="settings"><span class="menu-icon">⚙️</span> Settings</a></li>
+        </ul>
+      </aside>
+
+      <!-- Content Area -->
+      <div class="owner-content">
+
+        <!-- ===== DASHBOARD ===== -->
+        <section id="sec-dashboard">
+          <div class="section-header">
+            <h1>📊 Dashboard</h1>
+            <span class="text-sm text-grey" id="todayDate"></span>
+          </div>
+
+          <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+              <div class="stat-icon orange">💰</div>
+              <div class="stat-value" id="statRevenue">₹0</div>
+              <div class="stat-label">Today's Revenue</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon green">📦</div>
+              <div class="stat-value" id="statOrders">0</div>
+              <div class="stat-label">Total Orders</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon blue">🔥</div>
+              <div class="stat-value" id="statActive">0</div>
+              <div class="stat-label">Active Orders</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon orange">🪑</div>
+              <div class="stat-value" id="statTables">0/0</div>
+              <div class="stat-label">Occupied Tables</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon yellow">🧾</div>
+              <div class="stat-value" id="statBills">0</div>
+              <div class="stat-label">Bills Generated</div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="card">
+            <div class="card-header"><h3>Quick Actions</h3></div>
+            <div class="card-body">
+              <div class="flex gap-12" style="flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="showSection('tables')">➕ Add Table</button>
+                <button class="btn btn-primary" onclick="showSection('menu')">📋 Manage Menu</button>
+                <button class="btn btn-primary" onclick="showSection('billing')">💰 Generate Bill</button>
+                <a href="/kitchen" class="btn btn-outline" target="_blank">👨‍🍳 Open Kitchen Display</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== TABLES & QR ===== -->
+        <section id="sec-tables" style="display:none;">
+          <div class="section-header">
+            <h1>🪑 Tables & QR Codes</h1>
+            <button class="btn btn-primary" onclick="openAddTableModal()">➕ Add Table</button>
+          </div>
+
+          <div class="table-grid" id="tablesGrid"></div>
+
+          <div class="empty-state" id="tablesEmpty" style="display:none;">
+            <div class="empty-icon">🪑</div>
+            <h3>No tables added</h3>
+            <p>Add your restaurant tables to generate QR codes for customers.</p>
+          </div>
+        </section>
+
+        <!-- ===== MENU MANAGEMENT ===== -->
+        <section id="sec-menu" style="display:none;">
+          <div class="section-header">
+            <h1>📋 Menu Management</h1>
+          </div>
+
+          <!-- Categories -->
+          <div class="card mb-24">
+            <div class="card-header">
+              <h3>📂 Categories</h3>
+              <button class="btn btn-primary btn-sm" onclick="openAddCategoryModal()">➕ Add Category</button>
+            </div>
+            <div class="card-body">
+              <div id="categoriesList" class="flex gap-8" style="flex-wrap:wrap;"></div>
+              <div class="empty-state text-sm" id="categoriesEmpty" style="display:none; padding:20px;">
+                <p>No categories yet. Add one to organize your menu.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Menu Items -->
+          <div class="card">
+            <div class="card-header">
+              <h3>🍽️ Menu Items</h3>
+              <button class="btn btn-primary btn-sm" onclick="openAddItemModal()">➕ Add Item</button>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <table class="data-table" id="menuTable">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Available</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="menuTableBody"></tbody>
+              </table>
+              <div class="empty-state" id="menuEmpty" style="display:none; padding:24px;">
+                <div class="empty-icon">🍽️</div>
+                <h3>No menu items</h3>
+                <p>Add categories first, then add items to your menu.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== ORDERS ===== -->
+        <section id="sec-orders" style="display:none;">
+          <div class="section-header">
+            <h1>📦 Active Orders</h1>
+            <button class="btn btn-outline btn-sm" onclick="loadOrders()">🔄 Refresh</button>
+          </div>
+          <div class="orders-grid" id="ownerOrdersGrid"></div>
+          <div class="empty-state" id="ownerOrdersEmpty" style="display:none;">
+            <div class="empty-icon">📦</div>
+            <h3>No active orders</h3>
+            <p>Waiting for customer orders...</p>
+          </div>
+        </section>
+
+        <!-- ===== BILLING ===== -->
+        <section id="sec-billing" style="display:none;">
+          <div class="section-header">
+            <h1>💰 Generate Bill</h1>
+          </div>
+
+          <div class="grid-2">
+            <!-- Select Table -->
+            <div class="card">
+              <div class="card-header"><h3>Select Table</h3></div>
+              <div class="card-body">
+                <div class="table-grid" id="billingTablesGrid" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));"></div>
+                <div class="empty-state" id="billingTablesEmpty" style="display:none; padding:20px;">
+                  <p class="text-sm">No occupied tables. Customers need to place orders first.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bill Preview -->
+            <div class="card" id="billPreviewCard" style="display:none;">
+              <div class="card-header"><h3>Bill Preview</h3></div>
+              <div class="card-body">
+                <h3 class="mb-8" id="billTableName"></h3>
+                <div id="billItemsList"></div>
+                <div class="bill-summary" id="billSummary"></div>
+
+                <div class="form-row mt-16">
+                  <div class="form-group">
+                    <label class="form-label">Discount (%)</label>
+                    <input type="number" class="form-control" id="billDiscount" value="0" min="0" max="100" onchange="recalcBill()">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Payment Method</label>
+                    <select class="form-control" id="billPaymentMethod">
+                      <option value="cash">💵 Cash</option>
+                      <option value="card">💳 Card</option>
+                      <option value="upi">📱 UPI</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="flex gap-8 mt-16">
+                  <button class="btn btn-success btn-block" onclick="generateBill()">✅ Generate & Print Bill</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== BILL HISTORY ===== -->
+        <section id="sec-history" style="display:none;">
+          <div class="section-header">
+            <h1>📜 Bill History</h1>
+            <button class="btn btn-outline btn-sm" onclick="loadBillHistory()">🔄 Refresh</button>
+          </div>
+          <div class="card">
+            <div class="card-body" style="padding:0;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Bill #</th>
+                    <th>Table</th>
+                    <th>Subtotal</th>
+                    <th>Tax</th>
+                    <th>Discount</th>
+                    <th>Total</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="billHistoryBody"></tbody>
+              </table>
+              <div class="empty-state" id="billHistoryEmpty" style="display:none; padding:24px;">
+                <div class="empty-icon">📜</div>
+                <h3>No bills yet</h3>
+                <p>Bills will appear here after you generate them.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== SETTINGS ===== -->
+        <section id="sec-settings" style="display:none;">
+          <div class="section-header">
+            <h1>⚙️ Restaurant Settings</h1>
+          </div>
+          <div class="card" style="max-width:600px;">
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Restaurant Name</label>
+                <input type="text" class="form-control" id="setRestName" placeholder="Your Restaurant Name">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Address</label>
+                <textarea class="form-control" id="setAddress" placeholder="Restaurant address"></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Phone Number</label>
+                  <input type="text" class="form-control" id="setPhone" placeholder="+91 XXXXX XXXXX">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">GST Number</label>
+                  <input type="text" class="form-control" id="setGST" placeholder="GST Number (optional)">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Tax Percentage (%)</label>
+                  <input type="number" class="form-control" id="setTax" placeholder="5" min="0" max="50" step="0.5">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Currency Symbol</label>
+                  <input type="text" class="form-control" id="setCurrency" placeholder="₹">
+                </div>
+              </div>
+              <button class="btn btn-primary btn-lg mt-8" onclick="saveSettings()">💾 Save Settings</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <!-- Add/Edit Table Modal -->
+  <div class="modal-overlay" id="tableModalOverlay" onclick="closeTableModal()"></div>
+  <div class="modal" id="tableModal">
+    <div class="modal-header">
+      <h3 id="tableModalTitle">Add Table</h3>
+      <button class="close-btn" onclick="closeTableModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editTableId">
+      <div class="form-group">
+        <label class="form-label">Table Name / Number</label>
+        <input type="text" class="form-control" id="tableName" placeholder="e.g., Table 1, VIP 1, Terrace A">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Number of Seats</label>
+        <input type="number" class="form-control" id="tableSeats" value="4" min="1" max="50">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeTableModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTable()">Save Table</button>
+    </div>
+  </div>
+
+  <!-- QR Code Modal -->
+  <div class="modal-overlay" id="qrModalOverlay" onclick="closeQrModal()"></div>
+  <div class="modal" id="qrModal">
+    <div class="modal-header">
+      <h3>QR Code</h3>
+      <button class="close-btn" onclick="closeQrModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="qr-display" id="qrDisplay"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="printQr()">🖨️ Print QR</button>
+      <button class="btn btn-secondary" onclick="closeQrModal()">Close</button>
+    </div>
+  </div>
+
+  <!-- Add/Edit Category Modal -->
+  <div class="modal-overlay" id="catModalOverlay" onclick="closeCategoryModal()"></div>
+  <div class="modal" id="catModal">
+    <div class="modal-header">
+      <h3 id="catModalTitle">Add Category</h3>
+      <button class="close-btn" onclick="closeCategoryModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editCatId">
+      <div class="form-group">
+        <label class="form-label">Category Name</label>
+        <input type="text" class="form-control" id="catName" placeholder="e.g., Starters, Main Course, Beverages">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icon / Emoji</label>
+        <input type="text" class="form-control" id="catIcon" placeholder="🍽️" value="🍽️">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCategoryModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCategory()">Save Category</button>
+    </div>
+  </div>
+
+  <!-- Add/Edit Menu Item Modal -->
+  <div class="modal-overlay" id="itemModalOverlay" onclick="closeItemModal()"></div>
+  <div class="modal" id="itemModal">
+    <div class="modal-header">
+      <h3 id="itemModalTitle">Add Menu Item</h3>
+      <button class="close-btn" onclick="closeItemModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editItemId">
+      <div class="form-group">
+        <label class="form-label">Item Name</label>
+        <input type="text" class="form-control" id="itemName" placeholder="e.g., Paneer Butter Masala">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" id="itemDesc" placeholder="Brief description of the dish" style="min-height:60px;"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Price</label>
+          <input type="number" class="form-control" id="itemPrice" placeholder="0.00" min="0" step="0.50">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-control" id="itemCategory"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <div class="flex gap-12 mt-8">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="itemVeg" value="1" checked> 
+            <span class="veg-badge" style="width:14px;height:14px;"></span> Veg
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="itemVeg" value="0"> 
+            <span class="veg-badge nonveg" style="width:14px;height:14px;"></span> Non-Veg
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeItemModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
+    </div>
+  </div>
+
+  <!-- Bill Print Modal -->
+  <div class="modal-overlay" id="printModalOverlay" onclick="closePrintModal()"></div>
+  <div class="modal" id="printModal" style="max-width:400px;">
+    <div class="modal-header">
+      <h3>🧾 Bill</h3>
+      <button class="close-btn" onclick="closePrintModal()">✕</button>
+    </div>
+    <div class="modal-body" id="printBillContent"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="doPrint()">🖨️ Print</button>
+      <button class="btn btn-success" onclick="markPaidAndClose()">✅ Mark Paid & Close</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/owner.js"></script>
+</body>
+</html>

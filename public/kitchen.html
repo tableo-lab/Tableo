@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TABLEO — Kitchen Display</title>
+  <meta name="description" content="Kitchen order management display">
+  <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { background: var(--grey-100); }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <a href="/" class="navbar-brand">
+        <img src="/assets/logo.svg" alt="TABLEO">
+      </a>
+      <div class="navbar-info">
+        <span class="nav-badge">👨‍🍳 Kitchen Display</span>
+        <div class="nav-links">
+          <a href="/owner" class="nav-link">Owner Panel</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main -->
+    <div class="main-content" style="max-width: 1400px;">
+      <!-- Header -->
+      <div class="kitchen-header">
+        <div>
+          <h1>🔥 Active Orders</h1>
+          <p class="text-grey text-sm" id="orderCountText">0 active orders</p>
+        </div>
+        <div class="flex items-center gap-12">
+          <div class="kitchen-filters" id="kitchenFilters">
+            <button class="chip active" onclick="filterOrders('all')" data-filter="all">All</button>
+            <button class="chip" onclick="filterOrders('pending')" data-filter="pending">🟡 Pending</button>
+            <button class="chip" onclick="filterOrders('preparing')" data-filter="preparing">🔵 Preparing</button>
+            <button class="chip" onclick="filterOrders('ready')" data-filter="ready">🟢 Ready</button>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="toggleSound()" id="soundBtn">🔔 Sound ON</button>
+        </div>
+      </div>
+
+      <!-- Orders Grid -->
+      <div class="orders-grid" id="ordersGrid"></div>
+
+      <!-- Empty State -->
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <div class="empty-icon">👨‍🍳</div>
+        <h3>No active orders</h3>
+        <p>Waiting for new orders from customers...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Waiter Call Alert -->
+  <div id="waiterAlerts"></div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Audio for new order notification -->
+  <audio id="notifSound" preload="auto">
+    <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgkKu0markup" type="audio/wav">
+  </audio>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/kitchen.js"></script>
+</body>
+</html>
