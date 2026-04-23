@@ -45,7 +45,14 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    fetch(event.request).catch(() => {
+    fetch(event.request).then(response => {
+      // Clone response and aggressively cache it
+      const clone = response.clone();
+      caches.open(CACHE_NAME).then(cache => {
+        cache.put(event.request, clone);
+      });
+      return response;
+    }).catch(() => {
       return caches.match(event.request);
     })
   );

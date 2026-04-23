@@ -10,8 +10,14 @@ let soundEnabled = true;
 // ===========================
 // Init
 // ===========================
-document.addEventListener('DOMContentLoaded', () => {
-  socket.emit('join-kitchen');
+document.addEventListener('DOMContentLoaded', async () => {
+  const meRes = await fetch('/api/me', { credentials: 'same-origin' });
+  if (meRes.ok) {
+    const me = await meRes.json();
+    socket.emit('join-kitchen', me.restaurant_id);
+  } else {
+    socket.emit('join-kitchen');
+  }
   loadOrders();
 
   // Real-time events
@@ -44,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ===========================
 async function loadOrders() {
   try {
-    const res = await fetch('/api/orders');
+    const res = await fetch('/api/orders', { credentials: 'same-origin' });
     allOrders = await res.json();
     renderOrders();
   } catch (err) {
@@ -141,6 +147,7 @@ async function updateItemStatus(orderId, itemId, status) {
   try {
     await fetch(`/api/orders/${orderId}/items/${itemId}/status`, {
       method: 'PUT',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
@@ -154,6 +161,7 @@ async function markAllStatus(orderId, status) {
   try {
     await fetch(`/api/orders/${orderId}/status-all`, {
       method: 'PUT',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });

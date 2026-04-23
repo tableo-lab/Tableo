@@ -1,0 +1,17 @@
+{
+  "name": "Tableo Super Admin",
+  "short_name": "Super Admin",
+  "description": "Super Admin Dashboard for Tableo System",
+  "start_url": "/superadmin",
+  "display": "standalone",
+  "background_color": "#0f1115",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "/assets/superadmin_logo.png",
+      "sizes": "192x192 512x512 1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

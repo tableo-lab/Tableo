@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin - Tableo</title>
+
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="/manifest_superadmin.json">
+  <meta name="theme-color" content="#f59e0b">
+  <link rel="apple-touch-icon" href="/assets/superadmin_logo.png">
+
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0f1115; color: white; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 32px; }
+    .header img { width: 100px; height: 100px; border-radius: 20px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4); margin-bottom: 16px; object-fit: cover; }
+    h1 { color: #f59e0b; margin: 0; }
+    p.subtitle { color: #888; font-size: 0.9em; margin-top: 4px; }
+    
+    .card { background: #1a1d24; padding: 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    input, button { padding: 12px; margin-top: 8px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #333; outline: none; }
+    input { background: #2a2d35; color: white; width: 100%; box-sizing: border-box; font-size: 1rem; }
+    input:focus { border-color: #f59e0b; }
+    button { background: #f59e0b; color: black; font-weight: bold; cursor: pointer; border: none; font-size: 1rem; transition: background 0.2s; }
+    button:hover { background: #d97706; }
+    button:disabled { background: #555; cursor: not-allowed; }
+    
+    .restaurant-list { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .restaurant-item { background: #2a2d35; padding: 16px; border-radius: 8px; border-left: 4px solid #f59e0b; }
+    .restaurant-item strong { display: block; color: white; font-size: 1.1em; margin-bottom: 4px; }
+    .restaurant-item span { color: #aaa; font-size: 0.9em; }
+    .restaurant-meta { color: #666; font-size: 0.8em; margin-top: 8px; border-top: 1px solid #333; padding-top: 8px; }
+
+    select { background: #2a2d35; color: white; width: 100%; box-sizing: border-box; font-size: 1rem; appearance: none; }
+    select:focus { border-color: #f59e0b; }
+    .gst-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 8px; }
+    .gst-composition { background: #1e3a2f; color: #10b981; border: 1px solid #10b981; }
+    .gst-regular { background: #1e2a3a; color: #3b82f6; border: 1px solid #3b82f6; }
+    .gst-info { font-size: 0.8em; color: #888; margin-top: 4px; margin-bottom: 12px; padding: 10px; background: #22252d; border-radius: 6px; line-height: 1.5; }
+    .gst-info strong { color: #f59e0b; }
+
+    #installBtn { display: none; margin: 0 auto 32px auto; background: #10b981; color: white; border-radius: 24px; padding: 10px 24px; display: flex; align-items: center; justify-content: center; gap: 8px; max-width: 200px; }
+    #installBtn:hover { background: #059669; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="/assets/superadmin_logo.png" alt="Super Admin Logo">
+    <h1>Tableo Super Admin</h1>
+    <p class="subtitle">Platform Management Console</p>
+  </div>
+
+  <button id="installBtn" style="display: none;">
+    <span style="font-size: 1.2em;">📱</span> Install App
+  </button>
+  
+  <div class="card">
+    <h2>➕ Create New Restaurant</h2>
+    <form id="createForm">
+      <label>Login Username</label>
+      <input type="text" id="username" required placeholder="manager_username">
+      <label>Login Password</label>
+      <input type="password" id="password" required placeholder="Secure password">
+      <label>Restaurant Display Name</label>
+      <input type="text" id="name" required placeholder="Gourmet Kitchen">
+
+      <label>GST Taxpayer Type</label>
+      <select id="gstType" onchange="updateGstInfo()">
+        <option value="composition" selected>🏪 Composition Scheme</option>
+        <option value="regular">🏢 Regular Taxpayer</option>
+      </select>
+      <div class="gst-info" id="gstInfo">
+        <strong>Composition Scheme:</strong> For restaurants with turnover up to ₹1.5 Cr/year.<br>
+        • Fixed 5% tax on turnover (2.5% CGST + 2.5% SGST)<br>
+        • Cannot charge GST to customers<br>
+        • Issues <strong>Bill of Supply</strong> (not Tax Invoice)<br>
+        • No Input Tax Credit (ITC) available<br>
+        • Quarterly returns, lower compliance
+      </div>
+
+      <button type="submit" style="width:100%;">Create Restaurant</button>
+    </form>
+    <div id="createMsg" style="font-weight: bold; margin-top: 8px; color: #10b981; text-align: center;"></div>
+  </div>
+
+  <div class="card">
+    <h2>🏢 Existing Restaurants</h2>
+    <div class="restaurant-list" id="list">Loading...</div>
+  </div>
+
+  <script>
+    // System APIs
+    async function loadRestaurants() {
+      const res = await fetch('/api/superadmin/restaurants', { credentials: 'same-origin' });
+      if (!res.ok) {
+        document.getElementById('list').innerHTML = '<div style="color:#ef4444;">Failed to load data</div>';
+        return;
+      }
+      const list = await res.json();
+      const container = document.getElementById('list');
+      if (list.length === 0) {
+        container.innerHTML = '<div style="color:#888;">No restaurants found. Create one above!</div>';
+        return;
+      }
+      container.innerHTML = list.map(r => {
+        const gstType = r.gst_type || 'composition';
+        const gstLabel = gstType === 'regular' ? 'Regular' : 'Composition';
+        const gstClass = gstType === 'regular' ? 'gst-regular' : 'gst-composition';
+        return `
+          <div class="restaurant-item">
+            <strong>${r.name} <span class="gst-badge ${gstClass}">${gstLabel}</span></strong>
+            <span>@${r.username}</span>
+            <div class="restaurant-meta">
+              ID: ${r.id} | GST: ${gstLabel} | Joined: ${new Date(r.created_at).toLocaleDateString()}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('createForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      btn.disabled = true;
+      const res = await fetch('/api/superadmin/restaurants', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value,
+          password: document.getElementById('password').value,
+          name: document.getElementById('name').value,
+          gst_type: document.getElementById('gstType').value
+        })
+      });
+      btn.disabled = false;
+      if (res.ok) {
+        document.getElementById('createMsg').innerHTML = '✅ Restaurant created successfully!';
+        e.target.reset();
+        loadRestaurants();
+        setTimeout(() => { document.getElementById('createMsg').innerHTML = ''; }, 3000);
+      } else {
+        const data = await res.json();
+        document.getElementById('createMsg').innerHTML = `<span style="color:#ef4444">❌ ${data.error}</span>`;
+      }
+    };
+
+    loadRestaurants();
+
+    function updateGstInfo() {
+      const type = document.getElementById('gstType').value;
+      const info = document.getElementById('gstInfo');
+      if (type === 'composition') {
+        info.innerHTML = `
+          <strong>Composition Scheme:</strong> For restaurants with turnover up to ₹1.5 Cr/year.<br>
+          • Fixed 5% tax on turnover (2.5% CGST + 2.5% SGST)<br>
+          • Cannot charge GST to customers<br>
+          • Issues <strong>Bill of Supply</strong> (not Tax Invoice)<br>
+          • No Input Tax Credit (ITC) available<br>
+          • Quarterly returns, lower compliance
+        `;
+      } else {
+        info.innerHTML = `
+          <strong>Regular Taxpayer:</strong> For restaurants with turnover above ₹1.5 Cr/year or by choice.<br>
+          • Standard 5% GST for standalone restaurants<br>
+          • 18% GST for restaurants in hotels with tariff ≥ ₹7,500/night<br>
+          • Can charge and collect GST from customers<br>
+          • Issues <strong>Tax Invoice</strong> with GSTIN<br>
+          • Input Tax Credit (ITC) available on purchases<br>
+          • Monthly returns (GSTR-1, GSTR-3B)
+        `;
+      }
+    }
+
+    // PWA & Service Worker Logic
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+          console.log('SW registered:', registration);
+        }).catch(error => {
+          console.log('SW registration failed:', error);
+        });
+      });
+    }
+
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'flex';
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+           installBtn.style.display = 'none';
+        }
+        deferredPrompt = null;
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installBtn.style.display = 'none';
+      console.log('PWA was installed');
+    });
+  </script>
+</body>
+</html>

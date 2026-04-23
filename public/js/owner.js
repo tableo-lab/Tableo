@@ -13,8 +13,14 @@ let currentPrintBillId = null;
 // ===========================
 // Init
 // ===========================
-document.addEventListener('DOMContentLoaded', () => {
-  socket.emit('join-owner');
+document.addEventListener('DOMContentLoaded', async () => {
+  const meRes = await fetch('/api/me', { credentials: 'same-origin' });
+  if (meRes.ok) {
+    const me = await meRes.json();
+    socket.emit('join-owner', me.restaurant_id);
+  } else {
+    socket.emit('join-owner');
+  }
   loadSettings();
   loadDashboard();
   setTodayDate();
@@ -86,6 +92,7 @@ function setTodayDate() {
 // ===========================
 async function api(url, options = {}) {
   const res = await fetch(url, {
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined
@@ -108,6 +115,53 @@ function loadSettingsForm() {
   document.getElementById('setGST').value = settings.gst_number || '';
   document.getElementById('setTax').value = settings.tax_percent || '5';
   document.getElementById('setCurrency').value = settings.currency_symbol || '₹';
+
+  // Populate GST Type info card
+  const gstType = settings.gst_type || 'composition';
+  const badge = document.getElementById('gstTypeBadge');
+  const info = document.getElementById('gstTypeInfo');
+  const taxLabel = document.getElementById('taxRateLabel');
+  const taxHint = document.getElementById('taxRateHint');
+
+  if (gstType === 'regular') {
+    badge.textContent = '🏢 REGULAR TAXPAYER';
+    badge.className = 'status-badge status-preparing';
+    info.innerHTML = `
+      <div style="margin-bottom:8px;"><strong style="color:var(--info);">Regular GST Taxpayer</strong> — Your restaurant can charge GST to customers.</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.825rem;">
+        <div>✅ Can collect GST from customers</div>
+        <div>✅ Input Tax Credit (ITC) available</div>
+        <div>📄 Issues <strong>Tax Invoice</strong></div>
+        <div>📊 Monthly GSTR-1, GSTR-3B returns</div>
+        <div>💰 5% GST (standalone) / 18% (hotel ≥₹7,500)</div>
+        <div>🔄 Can do interstate supplies</div>
+      </div>
+      <div style="margin-top:10px; padding:8px 12px; background:var(--info-bg); border-radius:8px; font-size:0.8rem; color:var(--info);">
+        ℹ️ GST type is set by the platform administrator. Contact support to change.
+      </div>
+    `;
+    taxLabel.textContent = 'GST Rate (%)';
+    taxHint.textContent = 'GST charged to customers on Tax Invoice';
+  } else {
+    badge.textContent = '🏪 COMPOSITION SCHEME';
+    badge.className = 'status-badge status-available';
+    info.innerHTML = `
+      <div style="margin-bottom:8px;"><strong style="color:var(--success);">Composition Scheme Taxpayer</strong> — Simplified compliance for small restaurants.</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.825rem;">
+        <div>🚫 Cannot charge GST to customers</div>
+        <div>🚫 No Input Tax Credit (ITC)</div>
+        <div>📄 Issues <strong>Bill of Supply</strong></div>
+        <div>📊 Quarterly GSTR-4 returns</div>
+        <div>💰 Fixed 5% on turnover (CGST 2.5% + SGST 2.5%)</div>
+        <div>📍 Only intrastate supply allowed</div>
+      </div>
+      <div style="margin-top:10px; padding:8px 12px; background:var(--success-bg); border-radius:8px; font-size:0.8rem; color:var(--success);">
+        ℹ️ Eligible for restaurants with annual turnover up to ₹1.5 Crore.
+      </div>
+    `;
+    taxLabel.textContent = 'Inclusive Tax Rate (%)';
+    taxHint.textContent = 'Tax included in menu prices (not shown separately to customers)';
+  }
 }
 
 async function saveSettings() {
@@ -123,6 +177,29 @@ async function saveSettings() {
   settings = await api('/api/settings', { method: 'PUT', body: updates });
   currency = settings.currency_symbol || '₹';
   showToast('Settings saved successfully!', 'success');
+}
+
+async function changePassword() {
+  const newPassword = document.getElementById('setNewPassword').value;
+  if (!newPassword || newPassword.length < 4) {
+    showToast('Password must be at least 4 characters long', 'error');
+    return;
+  }
+  
+  const res = await fetch('/api/restaurant/password', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ newPassword })
+  });
+  
+  if (res.ok) {
+    showToast('Password changed successfully!', 'success');
+    document.getElementById('setNewPassword').value = '';
+    // Optionally prompt to re-login, but standard basic auth will prompt automatically when the browser clears its cache or tries to access next time
+  } else {
+    showToast('Failed to change password', 'error');
+  }
 }
 
 // ===========================
@@ -535,16 +612,18 @@ async function selectBillingTable(tableId) {
   const table = await api(`/api/tables/${tableId}`);
   document.getElementById('billTableName').textContent = `🪑 ${table.name}`;
 
-  // Render items
+  // Render items with inputs
   let html = '';
   orders.forEach(order => {
     html += `<div class="text-xs text-grey mb-8" style="margin-top:12px;">${order.order_number} · ${escHtml(order.customer_name)}</div>`;
     order.items.forEach(item => {
       if (item.status !== 'cancelled') {
         html += `
-          <div class="flex justify-between text-sm" style="padding:4px 0;">
-            <span>${item.quantity}× ${escHtml(item.item_name)}</span>
-            <span>${currency}${(item.item_price * item.quantity).toFixed(2)}</span>
+          <div class="flex justify-between text-sm align-center" style="padding:4px 0; gap:8px;" data-item-id="${item.id}" data-item-name="${escHtml(item.item_name)}">
+            <span style="flex:1;">${escHtml(item.item_name)}</span>
+            <input type="number" class="form-control bill-qty" style="width:50px; padding:2px 4px; text-align:center;" value="${item.quantity}" min="1" onchange="recalcBill()">
+            <span style="line-height:28px;">×</span>
+            <input type="number" class="form-control bill-price" style="width:80px; padding:2px 4px;" value="${parseFloat(item.item_price).toFixed(2)}" step="0.01" min="0" onchange="recalcBill()">
           </div>`;
       }
     });
@@ -557,14 +636,36 @@ async function selectBillingTable(tableId) {
   loadBillingTables();
 }
 
+function addCustomCharge() {
+  const container = document.getElementById('billItemsList');
+  const div = document.createElement('div');
+  div.className = "flex justify-between text-sm align-center custom-charge-row";
+  div.style = "padding:4px 0; gap:8px; margin-top:8px; border-top:1px dashed #ccc; padding-top:8px;";
+  div.innerHTML = `
+      <input type="text" class="form-control custom-name" style="flex:1; padding:2px 4px;" placeholder="Custom Fee Name" value="Custom Charge">
+      <input type="number" class="form-control bill-qty" style="width:50px; padding:2px 4px; text-align:center;" value="1" min="1" onchange="recalcBill()">
+      <span style="line-height:28px;">×</span>
+      <input type="number" class="form-control bill-price" style="width:80px; padding:2px 4px;" value="0.00" step="0.01" min="0" onchange="recalcBill()">
+  `;
+  container.appendChild(div);
+  recalcBill();
+}
+
 function recalcBill() {
   let subtotal = 0;
-  billingOrders.forEach(order => {
-    order.items.forEach(item => {
-      if (item.status !== 'cancelled') {
-        subtotal += item.item_price * item.quantity;
-      }
-    });
+  
+  // Existing items
+  document.querySelectorAll('#billItemsList > div[data-item-id]').forEach(div => {
+    const qty = parseInt(div.querySelector('.bill-qty').value) || 0;
+    const price = parseFloat(div.querySelector('.bill-price').value) || 0;
+    subtotal += (qty * price);
+  });
+
+  // Custom items
+  document.querySelectorAll('#billItemsList > .custom-charge-row').forEach(div => {
+    const qty = parseInt(div.querySelector('.bill-qty').value) || 0;
+    const price = parseFloat(div.querySelector('.bill-price').value) || 0;
+    subtotal += (qty * price);
   });
 
   const discountPercent = parseFloat(document.getElementById('billDiscount').value) || 0;
@@ -572,12 +673,29 @@ function recalcBill() {
   const grandTotal = subtotal - discountAmount;
   const taxPercent = parseFloat(settings.tax_percent) || 5;
   const taxAmount = Math.round((grandTotal * taxPercent / (100 + taxPercent)) * 100) / 100;
+  const gstType = settings.gst_type || 'composition';
+  const isComposition = gstType === 'composition';
+
+  let taxInfoHtml = '';
+  if (isComposition) {
+    // Composition: tax is inclusive, cannot show GST separately to customer
+    taxInfoHtml = `<div class="text-xs text-grey" style="text-align:right; margin-top:4px;">(Includes ${taxPercent}% Tax: ${currency}${taxAmount.toFixed(2)})</div>`;
+  } else {
+    // Regular: show CGST + SGST breakdown
+    const halfTax = taxPercent / 2;
+    const halfAmount = Math.round(taxAmount / 2 * 100) / 100;
+    taxInfoHtml = `
+      <div class="text-xs text-grey" style="text-align:right; margin-top:4px;">CGST (${halfTax}%): ${currency}${halfAmount.toFixed(2)}</div>
+      <div class="text-xs text-grey" style="text-align:right;">SGST (${halfTax}%): ${currency}${(taxAmount - halfAmount).toFixed(2)}</div>
+      <div class="text-xs text-grey" style="text-align:right; font-weight:600;">Total GST: ${currency}${taxAmount.toFixed(2)}</div>
+    `;
+  }
 
   document.getElementById('billSummary').innerHTML = `
     <div class="bill-row"><span>Total Items Value</span><span>${currency}${subtotal.toFixed(2)}</span></div>
     ${discountPercent > 0 ? `<div class="bill-row" style="color:var(--success)"><span>Discount (${discountPercent}%)</span><span>-${currency}${discountAmount.toFixed(2)}</span></div>` : ''}
     <div class="bill-row total"><span>Grand Total</span><span>${currency}${grandTotal.toFixed(2)}</span></div>
-    <div class="text-xs text-grey" style="text-align:right; margin-top:4px;">(Includes ${taxPercent}% GST: ${currency}${taxAmount.toFixed(2)})</div>
+    ${taxInfoHtml}
   `;
 }
 
@@ -587,9 +705,26 @@ async function generateBill() {
   const discountPercent = parseFloat(document.getElementById('billDiscount').value) || 0;
   const paymentMethod = document.getElementById('billPaymentMethod').value;
 
+  const cartUpdates = [];
+  document.querySelectorAll('#billItemsList > div[data-item-id]').forEach(div => {
+    const qty = parseInt(div.querySelector('.bill-qty').value) || 0;
+    const price = parseFloat(div.querySelector('.bill-price').value) || 0;
+    cartUpdates.push({ itemId: div.getAttribute('data-item-id'), quantity: qty, item_price: price });
+  });
+
+  const customItems = [];
+  document.querySelectorAll('#billItemsList > .custom-charge-row').forEach(div => {
+    const qty = parseInt(div.querySelector('.bill-qty').value) || 0;
+    const price = parseFloat(div.querySelector('.bill-price').value) || 0;
+    const name = div.querySelector('.custom-name').value || 'Custom Fee';
+    if(qty > 0 && price > 0) {
+      customItems.push({ item_name: name, quantity: qty, item_price: price });
+    }
+  });
+
   const bill = await api('/api/bills', {
     method: 'POST',
-    body: { table_id: billingTableId, discount_percent: discountPercent, payment_method: paymentMethod }
+    body: { table_id: billingTableId, discount_percent: discountPercent, payment_method: paymentMethod, cartUpdates, customItems }
   });
 
   if (bill.error) { showToast(bill.error, 'error'); return; }
@@ -611,6 +746,9 @@ function showPrintBill(bill) {
   const restAddr = settings.restaurant_address || '';
   const restPhone = settings.restaurant_phone || '';
   const gst = settings.gst_number || '';
+  const gstType = settings.gst_type || 'composition';
+  const isComposition = gstType === 'composition';
+  const invoiceTitle = isComposition ? 'BILL OF SUPPLY' : 'TAX INVOICE';
 
   let itemsHtml = '';
   if (bill.orders) {
@@ -630,14 +768,14 @@ function showPrintBill(bill) {
   document.getElementById('printBillContent').innerHTML = `
     <div class="print-bill">
       <div class="bill-header">
-        <h2 style="font-size:1.4rem;margin-bottom:4px;text-transform:uppercase;">TAX INVOICE</h2>
+        <h2 style="font-size:1.4rem;margin-bottom:4px;text-transform:uppercase;">${invoiceTitle}</h2>
         <h3 style="font-size:1.1rem;margin-bottom:4px;">${escHtml(restName)}</h3>
         ${restAddr ? `<p style="font-size:0.75rem;color:var(--grey-500);margin:2px 0;">${escHtml(restAddr)}</p>` : ''}
         ${restPhone ? `<p style="font-size:0.75rem;color:var(--grey-500);margin:2px 0;">Ph: ${escHtml(restPhone)}</p>` : ''}
         ${gst ? `<p style="font-size:0.75rem;font-weight:bold;margin:4px 0;">GSTIN: ${escHtml(gst)}</p>` : ''}
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:8px;color:var(--grey-500);">
-        <span>Invoice No: ${bill.bill_number}</span>
+        <span>${isComposition ? 'Bill' : 'Invoice'} No: ${bill.bill_number}</span>
         <span>${formatDateTime(bill.created_at)}</span>
       </div>
       <div style="font-size:0.85rem;margin-bottom:12px;"><strong>Table:</strong> ${escHtml(bill.table_name)}</div>
@@ -651,7 +789,10 @@ function showPrintBill(bill) {
         <div class="bill-row"><span>Subtotal</span><span>${currency}${bill.subtotal.toFixed(2)}</span></div>
         ${bill.discount_percent > 0 ? `<div class="bill-row"><span>Discount (${bill.discount_percent}%)</span><span>-${currency}${bill.discount_amount.toFixed(2)}</span></div>` : ''}
         <div class="bill-row total"><span>GRAND TOTAL</span><span>${currency}${bill.grand_total.toFixed(2)}</span></div>
-        <div style="text-align:right;font-size:0.75rem;margin-top:4px;">Includes GST (${bill.tax_percent}%): ${currency}${bill.tax_amount.toFixed(2)}</div>
+        ${isComposition 
+          ? `<div style="text-align:right;font-size:0.75rem;margin-top:4px;">Includes Tax (${bill.tax_percent}%): ${currency}${bill.tax_amount.toFixed(2)}</div>`
+          : `<div style="text-align:right;font-size:0.75rem;margin-top:4px;">CGST (${(bill.tax_percent/2).toFixed(1)}%): ${currency}${(bill.tax_amount/2).toFixed(2)}</div>
+             <div style="text-align:right;font-size:0.75rem;">SGST (${(bill.tax_percent/2).toFixed(1)}%): ${currency}${(bill.tax_amount - bill.tax_amount/2).toFixed(2)}</div>`}
       </div>
       <div style="text-align:center;font-size:0.8rem;color:var(--grey-500);margin-top:12px;padding-top:12px;border-top:1px dashed #333;">
         <p>Payment: ${bill.payment_method.toUpperCase()}</p>
@@ -783,3 +924,4 @@ function showToast(message, type = '') {
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 4500);
 }
+function downloadGSTReport() { window.open('/api/bills/export', '_blank'); }

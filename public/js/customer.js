@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ===========================
 async function api(url, options = {}) {
   const res = await fetch(url, {
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined

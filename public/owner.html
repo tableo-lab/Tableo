@@ -198,6 +198,9 @@
               <div class="card-body">
                 <h3 class="mb-8" id="billTableName"></h3>
                 <div id="billItemsList"></div>
+                <div class="mt-8 mb-8 text-right">
+                  <button class="btn btn-secondary btn-sm" onclick="addCustomCharge()">+ Add Custom Charge</button>
+                </div>
                 <div class="bill-summary" id="billSummary"></div>
 
                 <div class="form-row mt-16">
@@ -225,9 +228,12 @@
 
         <!-- ===== BILL HISTORY ===== -->
         <section id="sec-history" style="display:none;">
-          <div class="section-header">
+          <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
             <h1>📜 Bill History</h1>
-            <button class="btn btn-outline btn-sm" onclick="loadBillHistory()">🔄 Refresh</button>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="downloadGSTReport()">⬇️ Download GST Report</button>
+              <button class="btn btn-outline btn-sm" onclick="loadBillHistory()">🔄 Refresh</button>
+            </div>
           </div>
           <div class="card">
             <div class="card-body" style="padding:0;">
@@ -262,6 +268,18 @@
           <div class="section-header">
             <h1>⚙️ Restaurant Settings</h1>
           </div>
+
+          <!-- GST Type Info Card -->
+          <div class="card" style="max-width:600px; margin-bottom:20px;" id="gstTypeCard">
+            <div class="card-header">
+              <h3>🏛️ GST Registration Type</h3>
+              <span class="status-badge" id="gstTypeBadge" style="font-size:0.8rem;">—</span>
+            </div>
+            <div class="card-body" id="gstTypeInfo" style="font-size:0.875rem; color:var(--grey-700); line-height:1.7;">
+              Loading...
+            </div>
+          </div>
+
           <div class="card" style="max-width:600px;">
             <div class="card-body">
               <div class="form-group">
@@ -278,14 +296,15 @@
                   <input type="text" class="form-control" id="setPhone" placeholder="+91 XXXXX XXXXX">
                 </div>
                 <div class="form-group">
-                  <label class="form-label">GST Number</label>
+                  <label class="form-label">GSTIN Number</label>
                   <input type="text" class="form-control" id="setGST" placeholder="GST Number (optional)">
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label class="form-label">Inclusive GST Rate (%)</label>
+                  <label class="form-label" id="taxRateLabel">Inclusive GST Rate (%)</label>
                   <input type="number" class="form-control" id="setTax" placeholder="5" min="0" max="50" step="0.5">
+                  <small style="color:var(--grey-500); font-size:0.75rem;" id="taxRateHint">Tax included in menu prices</small>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Currency Symbol</label>
@@ -293,6 +312,19 @@
                 </div>
               </div>
               <button class="btn btn-primary btn-lg mt-8" onclick="saveSettings()">💾 Save Settings</button>
+            </div>
+          </div>
+
+          <div class="card" style="max-width:600px; margin-top:24px;">
+            <div class="card-header">
+              <h3>🔒 Login Settings</h3>
+            </div>
+            <div class="card-body">
+               <div class="form-group">
+                 <label class="form-label">New Password</label>
+                 <input type="password" class="form-control" id="setNewPassword" placeholder="Enter new password">
+               </div>
+               <button class="btn btn-warning" onclick="changePassword()">🔑 Change Password</button>
             </div>
           </div>
         </section>
